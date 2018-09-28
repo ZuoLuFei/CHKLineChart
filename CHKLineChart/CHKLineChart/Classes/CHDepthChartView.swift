@@ -1026,9 +1026,9 @@ extension CHDepthChartView {
             let frame:CGRect = CGRect(x: point.x - radius, y: point.y - radius, width: radius * 2, height: radius * 2)
             self.selectedTagGraphslayer!.frame = frame
             if item.type == .bid{
-                self.selectedTagGraphslayer!.backgroundColor = self.bidColor.fill.cgColor
+                self.selectedTagGraphslayer!.backgroundColor = self.bidColor.fill.withAlphaComponent(1).cgColor
             }else{
-                self.selectedTagGraphslayer!.backgroundColor = self.askColor.fill.cgColor
+                self.selectedTagGraphslayer!.backgroundColor = self.askColor.fill.withAlphaComponent(1).cgColor
             }
             self.selectedTagGraphslayer!.cornerRadius = radius
             self.selectedTagGraphslayer!.borderColor = UIColor.white.cgColor
@@ -1043,9 +1043,22 @@ extension CHDepthChartView {
      - parameter section:
      */
     func drawItemInfo(point: CGPoint,item:CHKDepthChartItem){
+
+        let priceStr = "价格:" + "\(item.value)"
+        let amount = item.depthAmount
+        var amountStr = ""
+        if amount >= 1000{
+            let newValue = amount / 1000
+            amountStr = "数量:" + String(format: "%.0fK", newValue)
+        }else {
+            amountStr = "数量:" + "\(amount)"
+        }
+        let pSize = priceStr.ch_sizeWithConstrained(UIFont.systemFont(ofSize: 10))
+        let aSize = amountStr.ch_sizeWithConstrained(UIFont.systemFont(ofSize: 10))
+
         // 长宽高
-        var width:CGFloat = 70
-        var height:CGFloat = 55
+        var width:CGFloat = pSize.width > aSize.width ? pSize.width + 5 : aSize.width + 5
+        var height:CGFloat = pSize.height + pSize.height + 6
         
         if let selectedView = self.delegate?.depthChartShowItemView?(chart: self, Selected: item){
             width = selectedView.frame.size.width
@@ -1097,27 +1110,15 @@ extension CHDepthChartView {
             
             //间距
             let padding:CGFloat = 4
-            let textHeight:CGFloat = height / 3
-            var textRect = CGRect(x: padding, y: 2, width: width - padding, height: textHeight)
-            
-            // 买卖类型
-            let typelayer = CHTextLayer()
-            if item.type == .bid{
-                typelayer.string = "买"
-            }else{
-                typelayer.string = "卖"
-            }
-            typelayer.frame = textRect
-            typelayer.alignmentMode = kCAAlignmentLeft
-            typelayer.fontSize = UIFont.systemFont(ofSize: 10).pointSize
-            typelayer.foregroundColor =  UIColor.white.cgColor
-            typelayer.backgroundColor = UIColor.clear.cgColor
-            typelayer.contentsScale = UIScreen.main.scale
-            
+            let textHeight:CGFloat = (height-6) / 2
+            var textRect = CGRect(x: padding, y: 3, width: width - padding, height: textHeight)
+
             // 价格
             let pricelayer = CHTextLayer()
-            pricelayer.string = item.value.ch_toString(maxF:self.decimal)//String(Double(iteme.value))
-            textRect = CGRect(x: textRect.origin.x, y: textRect.origin.y + textHeight, width: width - padding, height: textHeight)
+
+            pricelayer.string = priceStr
+            pricelayer.frame = textRect
+
             pricelayer.frame = textRect
             pricelayer.alignmentMode = kCAAlignmentLeft
             pricelayer.fontSize = UIFont.systemFont(ofSize: 10).pointSize
@@ -1127,14 +1128,6 @@ extension CHDepthChartView {
             
             // 量
             let vollayer = CHTextLayer()
-            let amount = item.depthAmount
-            var amountStr = ""
-            if amount >= 1000{
-                let newValue = amount / 1000
-                amountStr = String(format: "%.0fK", newValue)
-            }else {
-                amountStr = amount.ch_toString(maxF:self.numDecimal)//String(Double(amount))
-            }
             vollayer.string = amountStr
             textRect = CGRect(x: textRect.origin.x, y: textRect.origin.y + textHeight, width: width - padding, height: textHeight)
             vollayer.frame = textRect
@@ -1145,7 +1138,6 @@ extension CHDepthChartView {
             vollayer.contentsScale = UIScreen.main.scale
             
             _ = self.selectedItemInfoLayer!.sublayers?.map { $0.removeFromSuperlayer() }
-            self.selectedItemInfoLayer!.addSublayer(typelayer)
             self.selectedItemInfoLayer!.addSublayer(pricelayer)
             self.selectedItemInfoLayer!.addSublayer(vollayer)
             
